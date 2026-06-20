@@ -482,7 +482,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 12px;
+  cursor: grab;
+  user-select: none;
 }
+
+.popup-hd:active { cursor: grabbing; }
 
 .popup-dot {
   width: 10px; height: 10px;
@@ -1115,11 +1119,9 @@ mark {
       <div class="meta-row" style="padding-top:0">
         <input class="meta-inp" id="note-attendees" placeholder="Attendees (comma-separated)" />
       </div>
-      <div class="meta-row" style="padding-top:0">
-        <div style="position:relative; flex:1;">
-          <input class="meta-inp" id="note-api-key" type="password" placeholder="Claude API key (optional — for smart topic extraction)" style="width:100%; padding-right:70px; box-sizing:border-box;"/>
-          <button onclick="toggleNoteApiKeyVisibility()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;" id="note-api-key-eye">Show</button>
-        </div>
+      <div class="meta-row" style="padding-top:0; position:relative;">
+        <input class="meta-inp" id="note-api-key" type="password" placeholder="Grafilab API key (optional — for smart topic extraction)" style="padding-right:70px;"/>
+        <button onclick="toggleNoteApiKeyVisibility()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;" id="note-api-key-eye">Show</button>
       </div>
       <div class="note-area-wrap">
         <textarea class="note-textarea" id="note-text"
@@ -1143,10 +1145,10 @@ mark {
           <input class="meta-inp" id="ai-attendees" placeholder="Attendees (comma-separated)" />
         </div>
         <div class="meta-row" style="padding:0 0 10px; position:relative;">
-          <input class="meta-inp" id="ai-api-key" type="password" placeholder="Claude API key (sk-ant-…) for smart topic extraction" style="padding-right:70px;"/>
-          <button onclick="toggleApiKeyVisibility()" style="position:absolute;right:8px;top:40%;transform:translateY(-50%);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;" id="api-key-eye">Show</button>
+          <input class="meta-inp" id="ai-api-key" type="password" placeholder="Grafilab API key for smart topic extraction" style="padding-right:70px;"/>
+          <button onclick="toggleApiKeyVisibility()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;" id="api-key-eye">Show</button>
         </div>
-        <div style="padding:0 0 8px; font-size:10.5px; color:var(--muted);">💡 Without an API key, basic paragraph-split mode is used. With a key, Claude intelligently identifies distinct topics.</div>
+        <div style="padding:0 0 8px; font-size:10.5px; color:var(--muted);">💡 Without an API key, basic paragraph-split mode is used. With a key, the AI intelligently identifies distinct topics.</div>
       </div>
 
       <div class="ai-bar" id="ai-bar" onclick="toggleListen()">
@@ -1607,13 +1609,13 @@ async function addNoteToMap() {
 
   try {
     let parsedData;
-    let usedClaude = false;
+    let usedAI = false;
     let aiResult = null;
 
     if (apiKey) {
       try {
-        showToast('🤖 Claude is reading your notes…');
-        aiResult = await extractTopicsWithClaude(text, attendees, apiKey);
+        showToast('🤖 AI is reading your notes…');
+        aiResult = await extractTopicsWithAI(text, attendees, apiKey);
         parsedData = {
           mainNode: {
             title: aiResult.meetingTitle || userTitle || 'Meeting Summary',
@@ -1628,10 +1630,10 @@ async function addNoteToMap() {
             mentionedAttendees: (t.mentionedAttendees || []).filter(n => attendees.includes(n))
           }))
         };
-        usedClaude = true;
+        usedAI = true;
       } catch(apiErr) {
-        console.warn('Claude API failed:', apiErr);
-        showToast(`⚠️ Claude API error: ${apiErr.message}. Using local parser.`);
+        console.warn('AI API failed:', apiErr);
+        showToast(`⚠️ AI API error: ${apiErr.message}. Using local parser.`);
         parsedData = localStructureText(text, attendees);
         parsedData.mainNode = parsedData.mainNode || {};
         parsedData.mainNode.title = userTitle || 'Meeting Note';
@@ -1643,7 +1645,7 @@ async function addNoteToMap() {
     }
 
     const parentTitle = parsedData.mainNode?.title || userTitle || 'Meeting Note';
-    let baseTags = tags.length ? tags : (usedClaude ? ["Note", "Claude-Mapped"] : ["Note"]);
+    let baseTags = tags.length ? tags : (usedAI ? ["Note", "AI-Mapped"] : ["Note"]);
 
     const parentNode = placeNode({
       title: parentTitle,
@@ -1676,7 +1678,7 @@ async function addNoteToMap() {
     document.getElementById('note-tags').value     = '';
     document.getElementById('note-attendees').value = '';
     updateWordCount();
-    const method = usedClaude ? '🤖 Claude' : '📝 Local parser';
+    const method = usedAI ? '🤖 AI' : '📝 Local parser';
     showToast(`✓ ${method}: "${parentTitle}" — ${parsedData.subNodes.length + 1} nodes created`);
 
   } catch(e) {
@@ -1863,29 +1865,33 @@ function toggleApiKeyVisibility() {
 }
 
 // ═══════════════════════════════════════════════
-// CLAUDE AI — FULL ANALYSIS (topics + rich report)
+// GRAFILAB AI (OpenAI-compatible) — FULL ANALYSIS (topics + rich report)
 // ═══════════════════════════════════════════════
-async function callClaude(messages, apiKey, maxTokens = 3000) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+async function callGrafilab(messages, apiKey, maxTokens = 3000) {
+  const response = await fetch('https://console-api.grafilab.ai/api/oai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Authorization': `Bearer ${apiKey}`
     },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages })
+    body: JSON.stringify({
+      model: 'grafilab/qwen3.6-flash',
+      messages,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      top_p: 0.9
+    })
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     throw new Error(err?.error?.message || `API error ${response.status}`);
   }
   const data = await response.json();
-  const raw = (data.content || []).map(b => b.type === 'text' ? b.text : '').join('').trim();
+  const raw = data.choices?.[0]?.message?.content || '';
   return raw.replace(/```json\n?|```/g, '').trim();
 }
 
-async function extractTopicsWithClaude(transcript, attendees, apiKey) {
+async function extractTopicsWithAI(transcript, attendees, apiKey) {
   const attendeeCtx = attendees.length ? `Meeting attendees: ${attendees.join(', ')}.` : '';
   const prompt = `You are a senior business analyst. Analyse the following meeting transcript.
 
@@ -1948,7 +1954,7 @@ Transcript:
 ${transcript}
 """`;
 
-  const json = await callClaude([{ role: 'user', content: prompt }], apiKey, 3500);
+  const json = await callGrafilab([{ role: 'user', content: prompt }], apiKey, 3500);
   return JSON.parse(json);
 }
 
@@ -2150,13 +2156,13 @@ async function aiProcessAndAdd() {
 
   try {
     let parsedData;
-    let usedClaude = false;
+    let usedAI = false;
     let aiResult = null;
 
     if (apiKey) {
       try {
-        showToast('🤖 Claude is reading your transcript…');
-        aiResult = await extractTopicsWithClaude(transcript, attendees, apiKey);
+        showToast('🤖 AI is reading your transcript…');
+        aiResult = await extractTopicsWithAI(transcript, attendees, apiKey);
         parsedData = {
           mainNode: {
             title: aiResult.meetingTitle || userTitle || 'Meeting Summary',
@@ -2171,10 +2177,10 @@ async function aiProcessAndAdd() {
             mentionedAttendees: (t.mentionedAttendees || []).filter(n => attendees.includes(n))
           }))
         };
-        usedClaude = true;
+        usedAI = true;
       } catch (apiErr) {
-        console.warn('Claude API call failed, falling back to local parser:', apiErr);
-        showToast(`⚠️ Claude API error: ${apiErr.message}. Using local parser.`);
+        console.warn('AI API call failed, falling back to local parser:', apiErr);
+        showToast(`⚠️ AI API error: ${apiErr.message}. Using local parser.`);
         parsedData = localStructureText(transcript, attendees);
         parsedData.mainNode.title = userTitle || 'Meeting Summary';
       }
@@ -2185,7 +2191,7 @@ async function aiProcessAndAdd() {
     }
 
     const parentTitle = parsedData.mainNode?.title || userTitle || 'AI Meeting Note';
-    let generatedTags = ["Audio", usedClaude ? "Claude-Mapped" : "AI-Parsed"];
+    let generatedTags = ["Audio", usedAI ? "AI-Mapped" : "AI-Parsed"];
     if (attendees.length) generatedTags.push("Meeting");
 
     const parentNode = placeNode({
@@ -2223,7 +2229,7 @@ async function aiProcessAndAdd() {
 
     renderGraph();
     clearListen();
-    const method = usedClaude ? '🤖 Claude' : '📝 Local parser';
+    const method = usedAI ? '🤖 AI' : '📝 Local parser';
     showToast(`✓ ${method}: "${parentTitle}" — ${parsedData.subNodes.length + 1} nodes created`);
 
   } catch(error) {
@@ -2393,6 +2399,57 @@ function showPopup(node) {
     </div>` : ''}
   `;
 }
+
+// ═══════════════════════════════════════════════
+// DRAGGABLE POPUP — grab the header and move it anywhere
+// ═══════════════════════════════════════════════
+(function setupPopupDrag() {
+  const popup = document.getElementById('node-popup');
+  let dragging = false, offsetX = 0, offsetY = 0;
+
+  function startDrag(clientX, clientY, target) {
+    const header = target.closest && target.closest('.popup-hd');
+    if (!header || (target.closest && target.closest('.popup-close'))) return false;
+    dragging = true;
+    const rect = popup.getBoundingClientRect();
+    offsetX = clientX - rect.left;
+    offsetY = clientY - rect.top;
+    popup.style.animation = 'none';
+    return true;
+  }
+
+  function moveDrag(clientX, clientY) {
+    if (!dragging) return;
+    let nx = clientX - offsetX;
+    let ny = clientY - offsetY;
+    // Keep at least a sliver of the popup on-screen so it's never lost
+    nx = Math.max(-popup.offsetWidth + 60, Math.min(window.innerWidth - 60, nx));
+    ny = Math.max(0, Math.min(window.innerHeight - 40, ny));
+    popup.style.left = nx + 'px';
+    popup.style.top = ny + 'px';
+  }
+
+  function endDrag() { dragging = false; }
+
+  popup.addEventListener('mousedown', (e) => {
+    if (startDrag(e.clientX, e.clientY, e.target)) e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+  window.addEventListener('mouseup', endDrag);
+
+  // Basic touch support too
+  popup.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    if (startDrag(t.clientX, t.clientY, e.target)) e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const t = e.touches[0];
+    moveDrag(t.clientX, t.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchend', endDrag);
+})();
 
 // ═══════════════════════════════════════════════
 // FULLSCREEN READER CONTROLLERS
