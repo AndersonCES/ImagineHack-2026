@@ -1,0 +1,2956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NodeItDown</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & ROOT ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0D1117;
+  --panel:     #161B22;
+  --border:    rgba(255,255,255,0.08);
+  --text:      #E6EDF3;
+  --muted:     #7D8590;
+  --gold:      #E3B341;
+  --blue:      #58A6FF;
+  --purple:    #BC8CFF;
+  --green:     #3FB950;
+  --pink:      #F778BA;
+  --orange:    #FF8C42;
+  --teal:      #39D5C2;
+  --glow-gold: rgba(227,179,65,0.35);
+  --glow-blue: rgba(88,166,255,0.3);
+  --input-bg:  #0D1117;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+
+/* ── LAYOUT ── */
+.app { display: flex; height: 100vh; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  width: 420px;
+  min-width: 320px;
+  max-width: 50vw;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  resize: horizontal;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.logo-icon {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+
+.logo-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.logo-text span { color: var(--purple); }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  padding: 10px 20px 0;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .18s;
+  user-select: none;
+}
+
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Meta row */
+.meta-row {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px 10px;
+  flex-shrink: 0;
+}
+
+.meta-inp {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color .18s;
+}
+
+.meta-inp:focus { border-color: rgba(88,166,255,0.5); }
+.meta-inp::placeholder { color: var(--muted); }
+
+/* ── AI LISTEN BAR ── */
+.ai-bar {
+  margin: 0 20px 10px;
+  background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(88,166,255,0.08));
+  border: 1px solid rgba(188,140,255,0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(188,140,255,0.06), transparent);
+  transform: translateX(-100%);
+  transition: transform .6s;
+}
+
+.ai-bar:hover::before { transform: translateX(100%); }
+.ai-bar:hover { border-color: rgba(188,140,255,0.5); }
+
+.ai-bar.listening {
+  border-color: rgba(248,120,186,0.6);
+  background: linear-gradient(135deg, rgba(248,120,186,0.1), rgba(188,140,255,0.08));
+  animation: ai-pulse-border 2s infinite;
+}
+
+@keyframes ai-pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248,120,186,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(248,120,186,0); }
+}
+
+.ai-orb {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all .2s;
+  position: relative;
+}
+
+.ai-orb.listening {
+  background: linear-gradient(135deg, var(--pink), var(--purple));
+  animation: orb-breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(247,120,186,0.4); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 8px rgba(247,120,186,0); }
+}
+
+.ai-bar-text { flex: 1; }
+.ai-bar-title { font-size: 12.5px; font-weight: 500; color: var(--text); }
+.ai-bar-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.ai-bar-status {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+}
+
+.ai-bar.listening .ai-bar-status {
+  background: rgba(248,120,186,0.15);
+  color: var(--pink);
+}
+
+/* Waveform mini */
+.waveform-mini {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  height: 20px;
+  margin-left: 4px;
+}
+
+.waveform-mini.show { display: flex; }
+
+.wm-bar {
+  width: 3px;
+  background: var(--pink);
+  border-radius: 2px;
+  height: 4px;
+  animation: none;
+}
+
+@keyframes wm-wave {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+
+/* ── TEXTAREA ── */
+.note-area-wrap {
+  flex: 1;
+  padding: 0 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.note-textarea {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  resize: none;
+  outline: none;
+  line-height: 1.75;
+  transition: border-color .2s;
+  min-height: 0;
+}
+
+.note-textarea:focus { border-color: rgba(88,166,255,0.4); }
+.note-textarea::placeholder { color: var(--muted); }
+
+/* Status line */
+.note-status {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* Actions */
+.action-row {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 0 20px 18px;
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all .18s;
+  font-family: 'Inter', sans-serif;
+  user-select: none;
+}
+
+.btn-primary { background: var(--blue); color: #0D1117; }
+.btn-primary:hover { background: #79B8FF; transform: translateY(-1px); }
+
+.btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { background: rgba(255,255,255,0.1); }
+
+.btn-sm { padding: 6px 12px; font-size: 11.5px; }
+
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+/* ── MORNING BRIEF & TODO SUB-TAB PANEL ── */
+.brief-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.brief-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.brief-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--purple);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brief-empty {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.agenda-item {
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.agenda-item:last-child { border-bottom: none; padding-bottom: 0; }
+.agenda-meta {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* To-Do List Items */
+.todo-input-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 6px 0;
+}
+
+.todo-cb {
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.todo-text {
+  flex: 1;
+  line-height: 1.4;
+}
+.todo-item.done .todo-text {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.todo-del {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+.todo-del:hover { color: var(--pink); }
+
+/* ── RESIZE HANDLE ── */
+.resize-handle {
+  position: absolute;
+  right: -3px; top: 0; bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 10;
+}
+
+.resize-handle:hover { background: rgba(88,166,255,0.3); }
+
+/* ── RIGHT PANEL (CANVAS) ── */
+.right-panel {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Dot grid background */
+.right-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Canvas toolbar */
+.canvas-toolbar {
+  position: absolute;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(22,27,34,0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+.ctool-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+  border: none;
+  background: none;
+  font-family: 'Inter', sans-serif;
+}
+
+.ctool-btn:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+.ctool-sep { width: 1px; height: 16px; background: var(--border); }
+.ctool-label { font-size: 11px; color: var(--muted); padding: 0 4px; }
+
+/* Main SVG canvas */
+#graph-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  cursor: grab;
+}
+
+#graph-canvas:active { cursor: grabbing; }
+
+/* ── NODE POPUP ── */
+.node-popup {
+  position: absolute;
+  z-index: 30;
+  background: rgba(22,27,34,0.97);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 18px 20px;
+  width: 300px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(88,166,255,0.1);
+  pointer-events: all;
+  transform-origin: top left;
+  animation: popup-in .22s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes popup-in {
+  from { opacity: 0; transform: scale(.88) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1)  translateY(0); }
+}
+
+.popup-hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.popup-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.popup-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  padding: 0 10px 0 8px;
+  line-height: 1.3;
+}
+
+.popup-close {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.07);
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+
+.popup-close:hover { background: rgba(255,255,255,0.14); color: var(--text); }
+
+.popup-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.popup-tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: .3px;
+}
+
+.popup-body {
+  font-size: 12.5px;
+  color: rgba(230,237,243,0.8);
+  line-height: 1.7;
+  margin-bottom: 14px;
+  max-height: 140px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.popup-body::-webkit-scrollbar { width: 3px; }
+.popup-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* Read More Hyperlink */
+.popup-readmore-link {
+  display: inline-block;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.popup-readmore-link:hover { text-decoration: underline; color: #79B8FF; }
+
+.popup-connections {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.popup-conn-label {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+
+.popup-conn-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.conn-chip {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.conn-chip:hover { background: rgba(88,166,255,0.1); border-color: rgba(88,166,255,0.4); color: var(--blue); }
+
+.attendee-chip {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  transition: all .15s;
+}
+.attendee-chip:hover { background: rgba(88,166,255,0.1); border-color: rgba(88,166,255,0.4); color: var(--blue); }
+.attendee-chip.active {
+  background: rgba(88,166,255,0.18);
+  border-color: var(--blue);
+  color: var(--blue);
+  box-shadow: 0 0 0 1px rgba(88,166,255,0.3);
+}
+
+/* ── FULLSCREEN TRANSCRIPT READER OVERLAY PAGE ── */
+.reader-page-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #080B10;
+  display: none;
+  flex-direction: column;
+  animation: pageSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reader-header {
+  padding: 18px 48px;
+  background: rgba(22,27,34,0.98);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  backdrop-filter: blur(12px);
+}
+
+.reader-title-area h2 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.reader-title-area p {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.reader-header-actions { display: flex; align-items: center; gap: 10px; }
+
+.reader-content-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background: #080B10;
+}
+
+/* Loading state in reader */
+.reader-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.reader-loading .spinner { width: 28px; height: 28px; border-width: 3px; }
+
+/* ── DOCUMENT LAYOUT ── */
+.doc-hero {
+  background: linear-gradient(160deg, rgba(88,166,255,0.06) 0%, rgba(188,140,255,0.04) 60%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 52px 0 40px;
+}
+
+.doc-hero-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.doc-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: rgba(88,166,255,0.1);
+  border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  margin-bottom: 18px;
+}
+
+.doc-main-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  margin-bottom: 14px;
+}
+
+.doc-subtitle {
+  font-size: 15px;
+  color: rgba(230,237,243,0.6);
+  line-height: 1.7;
+  margin-bottom: 24px;
+  max-width: 640px;
+}
+
+.doc-meta-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.doc-meta-pill {
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── DOCUMENT BODY ── */
+.doc-body {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 48px 80px;
+}
+
+.doc-section {
+  margin-bottom: 40px;
+}
+
+.doc-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--purple);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(188,140,255,0.15);
+}
+
+.doc-section-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 14px;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.doc-paragraph {
+  font-size: 14.5px;
+  color: rgba(230,237,243,0.82);
+  line-height: 1.85;
+  margin-bottom: 16px;
+}
+
+.doc-paragraph + .doc-paragraph { margin-top: -4px; }
+
+.doc-highlight {
+  background: rgba(227,179,65,0.12);
+  border-left: 3px solid var(--gold);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 20px 0;
+  font-size: 14px;
+  color: rgba(230,237,243,0.9);
+  line-height: 1.7;
+}
+
+.doc-highlight strong { color: var(--gold); }
+
+mark {
+  background: rgba(227,179,65,0.2);
+  color: #FFE090;
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+
+/* ── CHART COMPONENTS ── */
+.chart-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 28px 0;
+}
+
+.chart-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 6px;
+}
+
+.chart-card-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+
+/* Bar chart */
+.bar-chart { display: flex; flex-direction: column; gap: 14px; }
+
+.bar-row { display: flex; align-items: center; gap: 12px; }
+
+.bar-label {
+  font-size: 12px;
+  color: var(--text);
+  width: 160px;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.bar-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+}
+
+.bar-value {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Stat grid */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.stat-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tag chips in reader */
+.doc-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  margin: 2px 3px 2px 0;
+}
+
+/* Action items list */
+.action-list { list-style: none; margin: 12px 0; }
+.action-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  font-size: 13.5px;
+  color: rgba(230,237,243,0.85);
+  line-height: 1.5;
+}
+
+.action-icon { flex-shrink: 0; margin-top: 1px; }
+
+/* Divider */
+.doc-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 36px 0;
+}
+
+/* TOC */
+.doc-toc {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 36px;
+}
+
+.doc-toc-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.doc-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--blue);
+  padding: 5px 0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color .15s;
+}
+
+.doc-toc-item:hover { color: #79B8FF; }
+.doc-toc-num { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; width: 20px; }
+
+/* Legacy compat */
+.transcript-section-heading {
+  font-size: 18px;
+  color: var(--text);
+  font-weight: 600;
+  margin-top: 32px;
+  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+}
+
+.ai-highlight-box {
+  background: rgba(188,140,255,0.07);
+  border-left: 3px solid var(--purple);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ── LINK BACK NOTIFICATION FLOATER ── */
+.link-back-bar {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  background: rgba(248, 120, 186, 0.95);
+  color: #0D1117;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.link-back-bar button {
+  background: #0D1117;
+  color: var(--text);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: rgba(22,27,34,0.97);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue);
+  color: var(--text);
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  z-index: 100;
+  transform: translateY(60px);
+  opacity: 0;
+  transition: all .28s cubic-bezier(.34,1.2,.64,1);
+  max-width: 280px;
+}
+
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── NODE COUNT BADGE ── */
+.graph-badge {
+  position: absolute;
+  bottom: 18px; right: 18px;
+  z-index: 20;
+  background: rgba(22,27,34,0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.graph-badge span { color: var(--blue); font-weight: 500; }
+
+/* ── SPINNER ── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* empty state */
+.graph-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.graph-empty-icon { font-size: 40px; opacity: .25; }
+.graph-empty-text { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="left-panel" id="left-panel">
+
+    <div class="panel-header">
+      <div class="logo">
+        <div class="logo-icon">✦</div>
+        <div class="logo-text">Node<span>It</span>Down</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearAll()" title="Clear all">⊗ Clear</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('write',this)">✏ Write</div>
+      <div class="tab" onclick="switchTab('ai',this)">◈ AI Listen</div>
+      <div class="tab" onclick="switchTab('brief',this)">☀️ Morning Brief</div>
+    </div>
+
+    <div id="tab-write">
+      <div class="meta-row">
+        <input class="meta-inp" id="note-title" placeholder="Note title (e.g. Meeting with Edward)" />
+      </div>
+      <div class="meta-row" style="padding-top:0">
+        <input class="meta-inp" id="note-date" type="date" style="max-width:150px"/>
+        <input class="meta-inp" id="note-tags" placeholder="Tags (comma-separated)" />
+      </div>
+      <div class="meta-row" style="padding-top:0">
+        <input class="meta-inp" id="note-attendees" placeholder="Attendees (comma-separated)" />
+      </div>
+      <div class="meta-row" style="padding-top:0">
+        <div style="position:relative; flex:1;">
+          <input class="meta-inp" id="note-api-key" type="password" placeholder="Claude API key (optional — for smart topic extraction)" style="width:100%; padding-right:70px; box-sizing:border-box;"/>
+          <button onclick="toggleNoteApiKeyVisibility()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;" id="note-api-key-eye">Show</button>
+        </div>
+      </div>
+      <div class="note-area-wrap">
+        <textarea class="note-textarea" id="note-text"
+          placeholder="Type or paste your meeting notes, observations, or any text here…&#10;&#10;The AI will parse it into a structured mind map cluster when you click 'Add to Map'."
+        ></textarea>
+        <div class="note-status" id="note-status">0 words · 0 chars</div>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-primary" onclick="addNoteToMap()">✦ Add to Map</button>
+        <button class="btn btn-ghost" onclick="aiPolishNote()" id="btn-polish">✨ AI Polish</button>
+      </div>
+    </div>
+
+    <div id="tab-ai" style="display:none; flex-direction:column; flex:1; min-height:0;">
+      <div style="padding: 14px 20px 0; flex-shrink:0;">
+        <div class="meta-row" style="padding:0 0 10px">
+          <input class="meta-inp" id="ai-title" placeholder="Meeting title (e.g. Q3 Review with Meridian)" />
+        </div>
+        <div class="meta-row" style="padding:0 0 10px">
+          <input class="meta-inp" id="ai-date" type="date" style="max-width:150px"/>
+          <input class="meta-inp" id="ai-attendees" placeholder="Attendees (comma-separated)" />
+        </div>
+        <div class="meta-row" style="padding:0 0 10px; position:relative;">
+          <input class="meta-inp" id="ai-api-key" type="password" placeholder="Claude API key (sk-ant-…) for smart topic extraction" style="padding-right:70px;"/>
+          <button onclick="toggleApiKeyVisibility()" style="position:absolute;right:8px;top:40%;transform:translateY(-50%);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;" id="api-key-eye">Show</button>
+        </div>
+        <div style="padding:0 0 8px; font-size:10.5px; color:var(--muted);">💡 Without an API key, basic paragraph-split mode is used. With a key, Claude intelligently identifies distinct topics.</div>
+      </div>
+
+      <div class="ai-bar" id="ai-bar" onclick="toggleListen()">
+        <div class="ai-orb" id="ai-orb">◈</div>
+        <div class="ai-bar-text">
+          <div class="ai-bar-title" id="ai-bar-title">Start AI Listening</div>
+          <div class="ai-bar-sub" id="ai-bar-sub">Click to let AI transcribe and structure your meeting</div>
+        </div>
+        <div class="waveform-mini" id="wm">
+          <div class="wm-bar"></div><div class="wm-bar"></div><div class="wm-bar"></div>
+          <div class="wm-bar"></div><div class="wm-bar"></div>
+        </div>
+        <div class="ai-bar-status" id="ai-status-badge">IDLE</div>
+      </div>
+
+      <div class="note-area-wrap" style="padding-top:10px;">
+        <div style="font-size:11px;color:var(--muted);padding:0 2px 6px;flex-shrink:0;">Live transcript</div>
+        <div id="live-tx" style="
+          flex:1;
+          background:rgba(255,255,255,0.02);
+          border:1px solid var(--border);
+          border-radius:10px;
+          padding:12px 14px;
+          font-size:12.5px;
+          line-height:1.75;
+          color:var(--text);
+          overflow-y:auto;
+          min-height:0;
+        ">
+          <span style="color:var(--muted);font-style:italic">Transcript will appear here as you speak…</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);padding:6px 2px 0;flex-shrink:0;" id="ai-word-count">0 words captured</div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-primary" onclick="aiProcessAndAdd()" id="btn-ai-add" disabled>✦ Process & Add to Map</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearListen()">✕ Clear</button>
+      </div>
+    </div>
+
+    <div id="tab-brief" style="display:none; flex-direction:column; flex:1; min-height:0;">
+      <div class="brief-container">
+
+        <div class="brief-section">
+          <div class="brief-title" style="display:flex; align-items:center; justify-content:space-between;">
+            <span>👥 Attendees</span>
+            <a href="#" id="brief-clear-highlight" onclick="event.preventDefault(); highlightAttendee(null);" style="display:none; font-size:11px; color:var(--blue); text-decoration:none;">Clear highlight</a>
+          </div>
+          <div style="font-size:11px; color:var(--muted); padding:0 2px 8px;">Click a name to highlight what they're on, on the canvas →</div>
+          <div id="brief-attendees-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+
+        <div class="brief-section">
+          <div class="brief-title">☀️ Today's Reminders</div>
+          <div id="brief-agenda-list"></div>
+        </div>
+
+        <div class="brief-section">
+          <div class="brief-title">☑️ Actions / To-Do List</div>
+          <div class="todo-input-row">
+            <input class="meta-inp" id="todo-new-text" placeholder="Add an actionable work item..." onkeydown="if(event.key==='Enter') addTodo()" />
+            <button class="btn btn-primary btn-sm" onclick="addTodo()">＋</button>
+          </div>
+          <div id="brief-todo-list"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="resize-handle" id="resize-handle"></div>
+  </div>
+
+  <div class="right-panel" id="right-panel">
+
+    <div class="canvas-toolbar">
+      <span class="ctool-label">✦ Graph</span>
+      <div class="ctool-sep"></div>
+      <button class="ctool-btn" onclick="zoomIn()">＋</button>
+      <button class="ctool-btn" onclick="zoomOut()">－</button>
+      <button class="ctool-btn" onclick="resetView()">⊡ Reset</button>
+      <div class="ctool-sep"></div>
+      <button class="ctool-btn" onclick="autoLayout()">⟳ Layout</button>
+    </div>
+
+    <div class="graph-empty" id="graph-empty">
+      <div class="graph-empty-icon">✦</div>
+      <div class="graph-empty-text">Your mind map is empty.<br>Add a note from the left panel to begin.</div>
+    </div>
+
+    <div class="link-back-bar" id="link-helper-hud" style="display:none;">
+      <span>🔗 Link Workflow Active: Select background destination node to tie connection...</span>
+      <button onclick="cancelLinkMode()">Exit Layout Linker</button>
+    </div>
+
+    <svg id="graph-canvas">
+      <defs>
+        <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#BC8CFF" stop-opacity=".6"/>
+          <stop offset="100%" stop-color="#58A6FF" stop-opacity=".6"/>
+        </linearGradient>
+
+        <filter id="glow-blue" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-strong" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-purple" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+
+        <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="rgba(88,166,255,0.5)"/>
+        </marker>
+      </defs>
+
+      <g id="graph-root">
+        <g id="edges-layer"></g>
+        <g id="nodes-layer"></g>
+        <g id="pulses-layer"></g>
+      </g>
+    </svg>
+
+    <div class="graph-badge" id="graph-badge">
+      <span id="badge-nodes">0</span> nodes · <span id="badge-edges">0</span> connections
+    </div>
+  </div>
+</div>
+
+<div class="reader-page-overlay" id="fullscreen-reader-page">
+  <div class="reader-header">
+    <div class="reader-title-area">
+      <h2 id="reader-heading-node-title">Meeting Documentation</h2>
+      <p id="reader-meta-node-details">Date: --/--/---- | Tags: None</p>
+    </div>
+    <div class="reader-header-actions">
+      <div id="reader-ai-status" style="font-size:11px;color:var(--muted);display:none;">
+        <span class="spinner" style="width:12px;height:12px;border-width:1.5px;vertical-align:middle;margin-right:6px;"></span>Generating report…
+      </div>
+      <button class="btn btn-ghost" onclick="closeFullscreenReader()">↩ Back to Canvas</button>
+    </div>
+  </div>
+  <div class="reader-content-body" id="reader-payload-html-surface"></div>
+</div>
+
+<div class="node-popup" id="node-popup" style="display:none"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const NODE_COLORS = [
+  { fill:'#BC8CFF', glow:'rgba(188,140,255,0.5)', text:'#0D1117' },
+  { fill:'#58A6FF', glow:'rgba(88,166,255,0.5)',  text:'#0D1117' },
+  { fill:'#3FB950', glow:'rgba(63,185,80,0.5)',   text:'#0D1117' },
+  { fill:'#E3B341', glow:'rgba(227,179,65,0.5)',  text:'#0D1117' },
+  { fill:'#F778BA', glow:'rgba(247,120,186,0.5)', text:'#0D1117' },
+  { fill:'#39D5C2', glow:'rgba(57,213,194,0.5)',  text:'#0D1117' },
+  { fill:'#FF8C42', glow:'rgba(255,140,66,0.5)',  text:'#0D1117' },
+];
+
+let nodes = [];   // { id, title, date, tags, body, summary, x, y, vx, vy, colorIdx, connections:[], fullRestructuredBodyHtml:"" }
+let edges = [];   // { from, to }
+let selectedNode = null;
+let attendeeFilter = null; // name currently highlighted from the Morning Brief, or null
+let nextId = 1;
+let colorCursor = 0;
+
+// Persistent Sub-registries
+let scheduleRegistry = []; // { id, scheduledDate, taskString, originTitle, originNodeId }
+let localTodos = [];       // { id, text, completed }
+
+// Manual connection states
+let linkModeActive = false;
+
+// Pan/zoom
+let viewX = 0, viewY = 0, viewScale = 1;
+let isPanning = false, panStartX = 0, panStartY = 0, panStartViewX = 0, panStartViewY = 0;
+
+// Dragging nodes
+let draggingNode = null, dragOffX = 0, dragOffY = 0;
+
+// Force sim
+let forceActive = false, forceTimer = null;
+
+// Speech
+let recognition = null, isListening = false;
+let liveTranscript = '', interimText = '';
+let waveTimer = null;
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  
+  document.getElementById('tab-write').style.display = tab === 'write' ? '' : 'none';
+  document.getElementById('tab-ai').style.display = tab === 'ai' ? 'flex' : 'none';
+  document.getElementById('tab-brief').style.display = tab === 'brief' ? 'flex' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+// WORD COUNT
+// ═══════════════════════════════════════════════
+document.getElementById('note-text').addEventListener('input', updateWordCount);
+
+function updateWordCount() {
+  const txt = document.getElementById('note-text').value;
+  const words = txt.trim() ? txt.trim().split(/\s+/).length : 0;
+  document.getElementById('note-status').textContent = `${words} words · ${txt.length} chars`;
+}
+
+// ═══════════════════════════════════════════════
+// DYNAMIC NATURAL LANGUAGE DATE EXTRACTION PARSER
+// ═══════════════════════════════════════════════
+function scanTextForDatesAndSchedule(noteText, originNodeTitle, originNodeId, contextDateString, attendees) {
+  const baseDate = contextDateString ? new Date(contextDateString + 'T00:00:00') : new Date();
+  const sentences = noteText.split(/[.!?;\n]+/);
+  
+  const daysOfWeek = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
+  
+  sentences.forEach(sentence => {
+    let matchFound = false;
+    let targetDate = new Date(baseDate.getTime());
+    let lowercaseSent = sentence.toLowerCase().trim();
+    
+    if(!lowercaseSent) return;
+
+    // Pattern: "next friday", "next monday"
+    let nextWeekMatch = lowercaseSent.match(/next\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/);
+    if (nextWeekMatch) {
+      const targetDayIndex = daysOfWeek[nextWeekMatch[1]];
+      const currentDayIndex = baseDate.getDay();
+      let daysAhead = (targetDayIndex + 7 - currentDayIndex) % 7;
+      if (daysAhead === 0) daysAhead = 7; 
+      daysAhead += 7; 
+      targetDate.setDate(baseDate.getDate() + daysAhead);
+      matchFound = true;
+    }
+    
+    // Pattern: "this friday", "coming tuesday"
+    if (!matchFound) {
+      let thisWeekMatch = lowercaseSent.match(/(?:this|coming)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/);
+      if (thisWeekMatch) {
+        const targetDayIndex = daysOfWeek[thisWeekMatch[1]];
+        const currentDayIndex = baseDate.getDay();
+        let daysAhead = (targetDayIndex - currentDayIndex + 7) % 7;
+        if (daysAhead === 0) daysAhead = 7;
+        targetDate.setDate(baseDate.getDate() + daysAhead);
+        matchFound = true;
+      }
+    }
+
+    // Pattern: "tomorrow"
+    if (!matchFound && lowercaseSent.includes('tomorrow')) {
+      targetDate.setDate(baseDate.getDate() + 1);
+      matchFound = true;
+    }
+
+    // Pattern: "in 2 days", "in 5 days"
+    if (!matchFound) {
+      let relativeDaysMatch = lowercaseSent.match(/in\s+(\d+)\s+days/);
+      if (relativeDaysMatch) {
+        targetDate.setDate(baseDate.getDate() + parseInt(relativeDaysMatch[1], 10));
+        matchFound = true;
+      }
+    }
+
+    if (matchFound) {
+      const formattedISO = targetDate.toISOString().split('T')[0];
+      const allAttendees = attendees || [];
+      const mentioned = allAttendees.filter(name => name && lowercaseSent.includes(name.toLowerCase()));
+      scheduleRegistry.push({
+        id: Math.random().toString(36).substr(2, 9),
+        scheduledDate: formattedISO,
+        taskString: sentence.trim(),
+        originTitle: originNodeTitle,
+        originNodeId: originNodeId,
+        attendees: mentioned.length ? mentioned : allAttendees
+      });
+    }
+  });
+
+  renderMorningBrief();
+}
+
+// ═══════════════════════════════════════════════
+// MORNING BRIEF & TODO CONTROLLER VIEWS
+// ═══════════════════════════════════════════════
+function renderMorningBrief() {
+  const agendaContainer = document.getElementById('brief-agenda-list');
+  const todayISO = new Date().toISOString().split('T')[0];
+  
+  const todaysItems = scheduleRegistry.filter(item => item.scheduledDate === todayISO);
+  
+  if (todaysItems.length === 0) {
+    agendaContainer.innerHTML = `<div class="brief-empty">No logged timeline items detected for today. Add text references with date phrases like 'next Friday' or 'tomorrow' inside notes.</div>`;
+  } else {
+    agendaContainer.innerHTML = todaysItems.map(item => `
+      <div class="agenda-item">
+        <div>• "${escHtml(item.taskString)}"</div>
+        <div class="agenda-meta">Source: <a href="#" style="color:var(--blue); text-decoration:none;" onclick="event.preventDefault(); selectNode(${item.originNodeId})">${escHtml(item.originTitle)}</a></div>
+        ${(item.attendees && item.attendees.length) ? `
+        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;">
+          ${item.attendees.map(name => `<span class="attendee-chip" style="font-size:10.5px; padding:3px 9px;" onclick="event.preventDefault(); highlightAttendee('${name.replace(/'/g, "\\'")}')">👤 ${escHtml(name)}</span>`).join('')}
+        </div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  renderAttendeesList();
+}
+
+// ═══════════════════════════════════════════════
+// ATTENDEE DIRECTORY + HIGHLIGHT-ON-CANVAS
+// ═══════════════════════════════════════════════
+function getAllAttendees() {
+  const set = new Set();
+  nodes.forEach(n => (n.attendees || []).forEach(a => set.add(a)));
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+function renderAttendeesList() {
+  const container = document.getElementById('brief-attendees-list');
+  if (!container) return;
+  const names = getAllAttendees();
+
+  if (names.length === 0) {
+    container.innerHTML = `<div class="brief-empty">No attendees added yet. Add names in the "Attendees" field when creating a note or meeting.</div>`;
+  } else {
+    container.innerHTML = names.map(name => `
+      <span class="attendee-chip ${attendeeFilter === name ? 'active' : ''}" onclick="highlightAttendee('${name.replace(/'/g, "\\'")}')">👤 ${escHtml(name)}</span>
+    `).join('');
+  }
+
+  document.getElementById('brief-clear-highlight').style.display = attendeeFilter ? '' : 'none';
+}
+
+function highlightAttendee(name) {
+  attendeeFilter = (attendeeFilter === name) ? null : name;
+  selectedNode = null;
+  document.getElementById('node-popup').style.display = 'none';
+  renderGraph();
+  renderAttendeesList();
+
+  if (attendeeFilter) {
+    const count = nodes.filter(n => (n.attendees || []).includes(attendeeFilter)).length;
+    showToast(count ? `Highlighting ${count} node(s) involving ${attendeeFilter}` : `No nodes found for ${attendeeFilter}`);
+  }
+}
+
+function renderTodos() {
+  const container = document.getElementById('brief-todo-list');
+  if (localTodos.length === 0) {
+    container.innerHTML = `<div class="brief-empty">No immediate tasks listed.</div>`;
+    return;
+  }
+
+  container.innerHTML = localTodos.map(todo => `
+    <div class="todo-item ${todo.completed ? 'done' : ''}">
+      <input type="checkbox" class="todo-cb" ${todo.completed ? 'checked' : ''} onchange="toggleTodo('${todo.id}')"/>
+      <span class="todo-text">${escHtml(todo.text)}</span>
+      <button class="todo-del" onclick="deleteTodo('${todo.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function addTodo() {
+  const inp = document.getElementById('todo-new-text');
+  const txt = inp.value.trim();
+  if(!txt) return;
+
+  localTodos.push({
+    id: Math.random().toString(36).substr(2, 9),
+    text: txt,
+    completed: false
+  });
+  inp.value = '';
+  renderTodos();
+}
+
+function toggleTodo(id) {
+  const todo = localTodos.find(t => t.id === id);
+  if(todo) todo.completed = !todo.completed;
+  renderTodos();
+}
+
+function deleteTodo(id) {
+  localTodos = localTodos.filter(t => t.id !== id);
+  renderTodos();
+}
+
+function processMorningBriefAlertNotification() {
+  const todayISO = new Date().toISOString().split('T')[0];
+  const todaysItems = scheduleRegistry.filter(item => item.scheduledDate === todayISO);
+  if (todaysItems.length > 0) {
+    setTimeout(() => {
+      showToast(`☀️ Morning Brief: You have ${todaysItems.length} agenda updates scheduled for today! Check the morning brief tab.`);
+    }, 1200);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// AI POLISH
+// ═══════════════════════════════════════════════
+function aiPolishNote() {
+  const txt = document.getElementById('note-text').value.trim();
+  if (!txt) { showToast('Nothing to tidy — type some notes first.'); return; }
+  const btn = document.getElementById('btn-polish');
+  btn.innerHTML = '<span class="spinner"></span> Tidying…';
+  btn.disabled = true;
+
+  // Local cleanup only (no AI/API involved): collapse whitespace, fix spacing
+  // around punctuation, and make sure sentences are capitalized.
+  let cleaned = txt
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.!?;:])/g, '$1')
+    .trim();
+  cleaned = cleaned.replace(/(^\s*\w|[.!?]\s+\w)/g, m => m.toUpperCase());
+
+  document.getElementById('note-text').value = cleaned;
+  updateWordCount();
+  showToast('✓ Notes tidied up');
+
+  btn.innerHTML = '✨ AI Polish';
+  btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════════
+// ADD NOTE TO MAP (Manual Text Area Tab)
+// ═══════════════════════════════════════════════
+function toggleNoteApiKeyVisibility() {
+  const inp = document.getElementById('note-api-key');
+  const btn = document.getElementById('note-api-key-eye');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+  else { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+
+async function addNoteToMap() {
+  const userTitle  = document.getElementById('note-title').value.trim();
+  const text       = document.getElementById('note-text').value.trim();
+  const date       = document.getElementById('note-date').value;
+  const tags       = document.getElementById('note-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const attendees  = document.getElementById('note-attendees').value.split(',').map(a=>a.trim()).filter(Boolean);
+  const apiKey     = document.getElementById('note-api-key').value.trim();
+
+  if (!text) { showToast('Type or paste some notes first.'); return; }
+
+  const btn = document.querySelector('#tab-write .btn-primary');
+  btn.innerHTML = '<span class="spinner"></span> Mapping…';
+  btn.disabled = true;
+
+  try {
+    let parsedData;
+    let usedClaude = false;
+    let aiResult = null;
+
+    if (apiKey) {
+      try {
+        showToast('🤖 Claude is reading your notes…');
+        aiResult = await extractTopicsWithClaude(text, attendees, apiKey);
+        parsedData = {
+          mainNode: {
+            title: aiResult.meetingTitle || userTitle || 'Meeting Summary',
+            summary: aiResult.meetingSummary || text.substring(0, 160),
+            restructuredHtml: null
+          },
+          subNodes: (aiResult.topics || []).map(t => ({
+            title: t.title,
+            summary: t.summary,
+            isAction: t.type === 'Action Item',
+            nodeType: t.type || 'Topic',
+            mentionedAttendees: (t.mentionedAttendees || []).filter(n => attendees.includes(n))
+          }))
+        };
+        usedClaude = true;
+      } catch(apiErr) {
+        console.warn('Claude API failed:', apiErr);
+        showToast(`⚠️ Claude API error: ${apiErr.message}. Using local parser.`);
+        parsedData = localStructureText(text, attendees);
+        parsedData.mainNode = parsedData.mainNode || {};
+        parsedData.mainNode.title = userTitle || 'Meeting Note';
+      }
+    } else {
+      parsedData = localStructureText(text, attendees);
+      parsedData.mainNode = parsedData.mainNode || {};
+      parsedData.mainNode.title = userTitle || 'Meeting Note';
+    }
+
+    const parentTitle = parsedData.mainNode?.title || userTitle || 'Meeting Note';
+    let baseTags = tags.length ? tags : (usedClaude ? ["Note", "Claude-Mapped"] : ["Note"]);
+
+    const parentNode = placeNode({
+      title: parentTitle,
+      date, tags: baseTags, body: text,
+      summary: parsedData.mainNode?.summary || text.substring(0, 140),
+      connections: [parentTitle],
+      fullRestructuredBodyHtml: parsedData.mainNode?.restructuredHtml || `<p>${escHtml(text)}</p>`,
+      attendees,
+      aiData: aiResult
+    });
+
+    parsedData.subNodes.forEach(sub => {
+      const subTag = sub.nodeType || (sub.isAction ? "Action Item" : "Topic");
+      const subAttendees = sub.mentionedAttendees.length ? sub.mentionedAttendees : attendees;
+      const childNode = placeNode({
+        title: sub.title, date, tags: [subTag],
+        body: sub.summary, summary: sub.summary,
+        connections: [parentTitle, sub.title],
+        fullRestructuredBodyHtml: `<div class="transcript-section-heading">${escHtml(sub.title)}</div><p>${escHtml(sub.summary)}</p>`,
+        attendees: subAttendees,
+        aiData: null
+      });
+      edges.push({ from: parentNode.id, to: childNode.id });
+    });
+
+    scanTextForDatesAndSchedule(text, parentTitle, parentNode.id, date, attendees);
+
+    document.getElementById('note-title').value    = '';
+    document.getElementById('note-text').value     = '';
+    document.getElementById('note-tags').value     = '';
+    document.getElementById('note-attendees').value = '';
+    updateWordCount();
+    const method = usedClaude ? '🤖 Claude' : '📝 Local parser';
+    showToast(`✓ ${method}: "${parentTitle}" — ${parsedData.subNodes.length + 1} nodes created`);
+
+  } catch(e) {
+    console.error("Mapping failure:", e);
+    const fallbackNode = placeNode({
+      title: userTitle || 'Meeting Note', date,
+      tags: tags.length ? tags : ["Note"], body: text,
+      summary: text.substring(0, 140) + (text.length > 140 ? '...' : ''),
+      connections: ['General'], attendees, aiData: null,
+      fullRestructuredBodyHtml: `<p>${escHtml(text)}</p>`
+    });
+    scanTextForDatesAndSchedule(text, fallbackNode.title, fallbackNode.id, date, attendees);
+    showToast(`✓ Added note (Fallback Mode)`);
+  }
+
+  btn.innerHTML = '✦ Add to Map';
+  btn.disabled  = false;
+}
+
+// ═══════════════════════════════════════════════
+// AI LISTEN AUDIO TRANSCRIPTION CONTROLS
+// ═══════════════════════════════════════════════
+function toggleListen() {
+  if (isListening) stopListening(); else startListening();
+}
+
+// ═══════════════════════════════════════════════
+// LOCAL TOPIC SPLITTER (no API / no API key needed)
+// Breaks raw text into a main node + topic sub-nodes using
+// paragraph/sentence heuristics, keyword-based action detection,
+// and attendee name-mention matching.
+// ═══════════════════════════════════════════════
+const ACTION_KEYWORDS = /\b(will|need(?:s)? to|must|should|todo|to-do|action item|follow up|due|deadline|by (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next))\b/i;
+
+function deriveChunkTitle(chunk) {
+  const firstSentence = (chunk.split(/(?<=[.!?])\s+/)[0] || chunk).trim();
+  let words = firstSentence.replace(/[^\w\s%$.,'-]/g, '').split(/\s+/).filter(Boolean);
+  let title = words.slice(0, 7).join(' ');
+  if (words.length > 7) title += '…';
+  if (!title) title = 'Discussion Point';
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
+function highlightKeyPhrases(chunk) {
+  let html = escHtml(chunk);
+  // Bold/mark numbers, percentages, money figures, and dates-ish phrases
+  html = html.replace(/(\$?\b\d+(\.\d+)?%?\b)/g, '<mark>$1</mark>');
+  return html;
+}
+
+function localStructureText(rawText, attendeesList) {
+  const text = (rawText || '').trim();
+  const attendees = attendeesList || [];
+
+  // Prefer paragraph breaks; fall back to grouping sentences in pairs
+  let chunks = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  if (chunks.length < 2) {
+    const sentences = text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+    chunks = [];
+    for (let i = 0; i < sentences.length; i += 2) {
+      chunks.push(sentences.slice(i, i + 2).join(' '));
+    }
+    if (chunks.length === 0) chunks = [text];
+  }
+
+  // Drop trivially short chunks (small talk / fragments), cap at 8 topics
+  chunks = chunks.filter(c => c.length >= 20).slice(0, 8);
+  if (chunks.length === 0) chunks = [text];
+
+  const mainSummarySource = chunks[0] || text;
+  const mainSummary = (mainSummarySource.split(/(?<=[.!?])\s+/)[0] || mainSummarySource).slice(0, 160);
+
+  const restructuredHtml = chunks.map(chunk => {
+    const heading = deriveChunkTitle(chunk);
+    return `<div class="transcript-section-heading">${escHtml(heading)}</div><p>${highlightKeyPhrases(chunk)}</p>`;
+  }).join('');
+
+  const subNodes = chunks.map(chunk => {
+    const isAction = ACTION_KEYWORDS.test(chunk);
+    const mentioned = attendees.filter(name => name && chunk.toLowerCase().includes(name.toLowerCase()));
+    return {
+      title: deriveChunkTitle(chunk),
+      summary: chunk.length > 160 ? chunk.slice(0, 157) + '...' : chunk,
+      isAction,
+      mentionedAttendees: mentioned
+    };
+  });
+
+  return {
+    mainNode: { title: null, summary: mainSummary, restructuredHtml },
+    subNodes
+  };
+}
+
+function startListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Speech recognition needs Chrome or Edge.'); return; }
+
+  recognition = new SR();
+  recognition.continuous     = true;
+  recognition.interimResults = true;
+  recognition.lang           = 'en-US';
+
+  recognition.onresult = e => {
+    interimText = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) liveTranscript += e.results[i][0].transcript + ' ';
+      else interimText = e.results[i][0].transcript;
+    }
+    renderLiveTx();
+  };
+
+  recognition.onerror = () => {};
+  recognition.onend   = () => { if (isListening) recognition.start(); };
+  recognition.start();
+
+  isListening = true;
+  setListeningUI(true);
+  animateWM(true);
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) recognition.stop();
+  animateWM(false);
+  setListeningUI(false);
+  interimText = '';
+  renderLiveTx();
+  if (liveTranscript.trim()) {
+    document.getElementById('btn-ai-add').disabled = false;
+    showToast('Recording stopped — click "Process & Add to Map"');
+  }
+}
+
+function setListeningUI(on) {
+  const bar   = document.getElementById('ai-bar');
+  const orb   = document.getElementById('ai-orb');
+  const title = document.getElementById('ai-bar-title');
+  const sub   = document.getElementById('ai-bar-sub');
+  const badge = document.getElementById('ai-status-badge');
+  const wm    = document.getElementById('wm');
+
+  bar.classList.toggle('listening', on);
+  orb.classList.toggle('listening', on);
+  wm.classList.toggle('show', on);
+  title.textContent = on ? 'AI is Listening…' : 'Start AI Listening';
+  sub.textContent   = on ? 'Click to stop recording' : 'Click to let AI transcribe and structure your meeting';
+  badge.textContent = on ? 'LIVE' : 'IDLE';
+}
+
+function renderLiveTx() {
+  const box = document.getElementById('live-tx');
+  const words = liveTranscript.trim() ? liveTranscript.trim().split(/\s+/).length : 0;
+  document.getElementById('ai-word-count').textContent = `${words} words captured`;
+  box.innerHTML = (liveTranscript || '')
+    + (interimText ? `<span style="color:var(--muted);font-style:italic"> ${interimText}</span>` : '')
+    || '<span style="color:var(--muted);font-style:italic">Transcript will appear here as you speak…</span>';
+  box.scrollTop = box.scrollHeight;
+}
+
+function animateWM(on) {
+  const bars = document.querySelectorAll('.wm-bar');
+  bars.forEach((b,i) => {
+    if (on) b.style.animation = `wm-wave ${.4 + i*.15}s ease-in-out ${i*.08}s infinite`;
+    else b.style.animation = 'none';
+  });
+}
+
+function clearListen() {
+  if (isListening) stopListening();
+  liveTranscript = ''; interimText = '';
+  renderLiveTx();
+  document.getElementById('btn-ai-add').disabled = true;
+}
+
+// ═══════════════════════════════════════════════
+// API KEY HELPER
+// ═══════════════════════════════════════════════
+function toggleApiKeyVisibility() {
+  const inp = document.getElementById('ai-api-key');
+  const btn = document.getElementById('api-key-eye');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+  else { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+
+// ═══════════════════════════════════════════════
+// CLAUDE AI — FULL ANALYSIS (topics + rich report)
+// ═══════════════════════════════════════════════
+async function callClaude(messages, apiKey, maxTokens = 3000) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API error ${response.status}`);
+  }
+  const data = await response.json();
+  const raw = (data.content || []).map(b => b.type === 'text' ? b.text : '').join('').trim();
+  return raw.replace(/```json\n?|```/g, '').trim();
+}
+
+async function extractTopicsWithClaude(transcript, attendees, apiKey) {
+  const attendeeCtx = attendees.length ? `Meeting attendees: ${attendees.join(', ')}.` : '';
+  const prompt = `You are a senior business analyst. Analyse the following meeting transcript.
+
+${attendeeCtx}
+
+Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+
+{
+"meetingTitle": "AI Prompt Optimization and Structural Analysis Strategy",
+"meetingSummary": "The discussion identified failures in current AI summarization outputs, focusing on achieving structured, professional, and actionable business intelligence.",
+"topics": [
+{
+"title": "AI Output Quality Assessment",
+"summary": "Current prompts are yielding disjointed, nonsensical fragments instead of coherent business insights. The focus is to transition from raw extraction to synthesized, professional summaries.",
+"type": "Topic",
+"mentionedAttendees": [],
+"keyFacts": [
+"Current output lacks logical flow",
+"Required format is structured JSON"
+]
+},
+{
+"title": "Standardizing Deliverable Structure",
+"summary": "The objective is to ensure the output includes a clear title, purpose, problem definition, proposed solutions, and follow-up timelines in a clean, readable format.",
+"type": "Decision",
+"mentionedAttendees": [],
+"keyFacts": [
+"Must implement structured professional schema",
+"Goal is executive-level clarity"
+]
+}
+],
+"stats": [
+{ "label": "Complexity Level", "value": "High" },
+{ "label": "Output Format", "value": "Strict JSON" }
+],
+"charts": [],
+"actionItems": [
+"Redesign prompt logic to prioritize synthesis over literal extraction",
+"Integrate 'Problem' and 'Solution' fields into the JSON schema",
+"Ensure all responses adhere to professional, third-person business English"
+],
+"keyDecisions": [
+"Reimagine AI logic to move away from fragmented text toward holistic business analysis."
+],
+"risks": [
+"Continued risk of hallucinated or nonsensical output if prompt constraints are too rigid."
+],
+"executiveSummary": "The current AI prompting framework requires a structural overhaul to move from fragmented data extraction to actionable business intelligence. By re-engineering the model to focus on synthesis, we will ensure that summaries provide clear problem identification, strategic solutions, and defined follow-up cadences suitable for C-suite review.",
+"toDoList": [
+"- Redesign prompt logic for synthesis",
+"- Add 'Problem' and 'Solution' fields to schema",
+"- Enforce professional business English in all outputs",
+"- Establish structured JSON as mandatory format"
+]
+}
+
+Transcript:
+"""
+${transcript}
+"""`;
+
+  const json = await callClaude([{ role: 'user', content: prompt }], apiKey, 3500);
+  return JSON.parse(json);
+}
+
+// ═══════════════════════════════════════════════
+// READER: BUILD RICH DOCUMENT HTML FROM AI DATA
+// ═══════════════════════════════════════════════
+const CHART_GRADIENTS = [
+  ['#58A6FF','#BC8CFF'],
+  ['#3FB950','#39D5C2'],
+  ['#E3B341','#FF8C42'],
+  ['#F778BA','#BC8CFF'],
+];
+
+function buildReaderDocument(node, aiData) {
+  const date = formatDateShort(node.date) || 'No date';
+  const tags = (node.tags || []).join(' · ') || 'General';
+  const attendees = (node.attendees || []);
+
+  // ── Hero ──
+  const typeLabel = node.tags.includes('Audio') ? '🎙 Audio Recording' : '📝 Meeting Notes';
+  let html = `
+    <div class="doc-hero">
+      <div class="doc-hero-inner">
+        <div class="doc-category-badge">${typeLabel}</div>
+        <div class="doc-main-title">${escHtml(aiData.meetingTitle || node.title)}</div>
+        <div class="doc-subtitle">${escHtml(aiData.executiveSummary || aiData.meetingSummary || '')}</div>
+        <div class="doc-meta-pills">
+          <span class="doc-meta-pill">📅 ${date}</span>
+          <span class="doc-meta-pill">🏷 ${tags}</span>
+          ${attendees.length ? `<span class="doc-meta-pill">👥 ${attendees.map(escHtml).join(', ')}</span>` : ''}
+          ${aiData.topics ? `<span class="doc-meta-pill">◈ ${aiData.topics.length} topics identified</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="doc-body">`;
+
+  // ── Stats row ──
+  if (aiData.stats && aiData.stats.length) {
+    html += `<div class="stat-grid">`;
+    aiData.stats.forEach(s => {
+      html += `<div class="stat-card">
+        <div class="stat-value">${escHtml(String(s.value))}</div>
+        <div class="stat-label">${escHtml(s.label)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── TOC ──
+  if (aiData.topics && aiData.topics.length) {
+    html += `<div class="doc-toc"><div class="doc-toc-title">Contents</div>`;
+    aiData.topics.forEach((t, i) => {
+      html += `<a class="doc-toc-item" href="#section-${i}"><span class="doc-toc-num">0${i+1}</span>${escHtml(t.title)}</a>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Topic sections ──
+  if (aiData.topics && aiData.topics.length) {
+    aiData.topics.forEach((t, i) => {
+      const typeColors = {
+        'Action Item': { color: '#3FB950', bg: 'rgba(63,185,80,0.1)', border: 'rgba(63,185,80,0.25)' },
+        'Decision':    { color: '#58A6FF', bg: 'rgba(88,166,255,0.1)', border: 'rgba(88,166,255,0.25)' },
+        'Risk':        { color: '#FF8C42', bg: 'rgba(255,140,66,0.1)', border: 'rgba(255,140,66,0.25)' },
+        'Topic':       { color: '#BC8CFF', bg: 'rgba(188,140,255,0.1)', border: 'rgba(188,140,255,0.25)' },
+      };
+      const tc = typeColors[t.type] || typeColors['Topic'];
+
+      html += `<div class="doc-section" id="section-${i}">
+        <div class="doc-section-label">${t.type || 'Topic'}</div>
+        <div class="doc-section-heading">${escHtml(t.title)}</div>
+        <div class="doc-paragraph">${escHtml(t.summary)}</div>`;
+
+      if (t.keyFacts && t.keyFacts.length) {
+        html += `<div class="doc-highlight">`;
+        t.keyFacts.forEach(f => {
+          html += `<div style="display:flex;gap:8px;margin-bottom:6px;font-size:13.5px;color:rgba(230,237,243,0.85);"><span style="color:var(--gold);flex-shrink:0;">▸</span><span>${escHtml(f)}</span></div>`;
+        });
+        html += `</div>`;
+      }
+
+      if (t.mentionedAttendees && t.mentionedAttendees.length) {
+        html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          ${t.mentionedAttendees.map(a => `<span class="doc-tag" style="color:${tc.color};border-color:${tc.border};background:${tc.bg}">👤 ${escHtml(a)}</span>`).join('')}
+        </div>`;
+      }
+
+      html += `</div>`;
+
+      // Insert a chart after certain topics if available
+      if (aiData.charts && aiData.charts[i]) {
+        html += buildChartHtml(aiData.charts[i], i);
+      }
+    });
+  }
+
+  // ── Remaining charts (if more than topics) ──
+  if (aiData.charts) {
+    const extra = aiData.charts.slice((aiData.topics || []).length);
+    extra.forEach((c, i) => { html += buildChartHtml(c, 99 + i); });
+  }
+
+  // ── Action items ──
+  if (aiData.actionItems && aiData.actionItems.length) {
+    html += `<div class="doc-divider"></div>
+      <div class="doc-section">
+        <div class="doc-section-label">Action Items</div>
+        <div class="doc-section-heading">Required Follow-ups</div>
+        <ul class="action-list">`;
+    aiData.actionItems.forEach(a => {
+      html += `<li><span class="action-icon">✦</span>${escHtml(a)}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  // ── Decisions ──
+  if (aiData.keyDecisions && aiData.keyDecisions.length) {
+    html += `<div class="doc-section">
+      <div class="doc-section-label">Decisions</div>
+      <div class="doc-section-heading">Key Decisions Made</div>
+      <ul class="action-list">`;
+    aiData.keyDecisions.forEach(d => {
+      html += `<li><span class="action-icon" style="color:var(--blue);">◉</span>${escHtml(d)}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  // ── Risks ──
+  if (aiData.risks && aiData.risks.length) {
+    html += `<div class="doc-section">
+      <div class="doc-section-label">Risks & Concerns</div>
+      <div class="doc-section-heading">Identified Risks</div>
+      <ul class="action-list">`;
+    aiData.risks.forEach(r => {
+      html += `<li><span class="action-icon" style="color:var(--orange);">⚠</span>${escHtml(r)}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  html += `</div>`; // end doc-body
+  return html;
+}
+
+function buildChartHtml(chart, idx) {
+  if (!chart || chart.type !== 'bar' || !chart.data || !chart.data.length) return '';
+  const [c1, c2] = CHART_GRADIENTS[idx % CHART_GRADIENTS.length];
+  const maxVal = Math.max(...chart.data.map(d => Number(d.value) || 0), 1);
+
+  let html = `<div class="chart-card">
+    <div class="chart-card-title">${escHtml(chart.title || 'Analysis')}</div>
+    ${chart.subtitle ? `<div class="chart-card-subtitle">${escHtml(chart.subtitle)}</div>` : ''}
+    <div class="bar-chart">`;
+
+  chart.data.forEach((item, i) => {
+    const pct = Math.round((Number(item.value) / maxVal) * 100);
+    const displayVal = item.unit ? `${item.value}${item.unit}` : item.value;
+    const barColor = i % 2 === 0
+      ? `linear-gradient(90deg, ${c1}, ${c2})`
+      : `linear-gradient(90deg, ${c2}, ${c1})`;
+
+    html += `<div class="bar-row">
+      <div class="bar-label">${escHtml(String(item.label))}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${barColor};"></div>
+      </div>
+      <div class="bar-value">${escHtml(String(displayVal))}</div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  return html;
+}
+
+// Animate bar fills after injecting into DOM
+function animateReaderBars() {
+  const fills = document.querySelectorAll('#reader-payload-html-surface .bar-fill');
+  fills.forEach(el => {
+    const target = el.style.width;
+    el.style.width = '0%';
+    requestAnimationFrame(() => { el.style.width = target; });
+  });
+}
+
+// ═══════════════════════════════════════════════
+// AI PROCESS AND ADD (AI Listening Audio Tab)
+// ═══════════════════════════════════════════════
+async function aiProcessAndAdd() {
+  const userTitle  = document.getElementById('ai-title').value.trim();
+  const date       = document.getElementById('ai-date').value;
+  const attendees  = document.getElementById('ai-attendees').value.split(',').map(a=>a.trim()).filter(Boolean);
+  const apiKey     = document.getElementById('ai-api-key').value.trim();
+  const transcript = liveTranscript.trim();
+
+  if (!transcript) { showToast('No speech transcript found to process.'); return; }
+
+  const btn = document.getElementById('btn-ai-add');
+  btn.innerHTML = '<span class="spinner"></span> Analysing Topics…';
+  btn.disabled = true;
+
+  try {
+    let parsedData;
+    let usedClaude = false;
+    let aiResult = null;
+
+    if (apiKey) {
+      try {
+        showToast('🤖 Claude is reading your transcript…');
+        aiResult = await extractTopicsWithClaude(transcript, attendees, apiKey);
+        parsedData = {
+          mainNode: {
+            title: aiResult.meetingTitle || userTitle || 'Meeting Summary',
+            summary: aiResult.meetingSummary || transcript.substring(0, 160),
+            restructuredHtml: null // will be built dynamically in reader
+          },
+          subNodes: (aiResult.topics || []).map(t => ({
+            title: t.title,
+            summary: t.summary,
+            isAction: t.type === 'Action Item',
+            nodeType: t.type || 'Topic',
+            mentionedAttendees: (t.mentionedAttendees || []).filter(n => attendees.includes(n))
+          }))
+        };
+        usedClaude = true;
+      } catch (apiErr) {
+        console.warn('Claude API call failed, falling back to local parser:', apiErr);
+        showToast(`⚠️ Claude API error: ${apiErr.message}. Using local parser.`);
+        parsedData = localStructureText(transcript, attendees);
+        parsedData.mainNode.title = userTitle || 'Meeting Summary';
+      }
+    } else {
+      parsedData = localStructureText(transcript, attendees);
+      parsedData.mainNode = parsedData.mainNode || {};
+      parsedData.mainNode.title = userTitle || 'Meeting Summary';
+    }
+
+    const parentTitle = parsedData.mainNode?.title || userTitle || 'AI Meeting Note';
+    let generatedTags = ["Audio", usedClaude ? "Claude-Mapped" : "AI-Parsed"];
+    if (attendees.length) generatedTags.push("Meeting");
+
+    const parentNode = placeNode({
+      title: parentTitle,
+      date: date,
+      tags: generatedTags,
+      body: transcript,
+      summary: parsedData.mainNode?.summary || `Meeting summary for ${parentTitle}`,
+      connections: [parentTitle],
+      fullRestructuredBodyHtml: parsedData.mainNode?.restructuredHtml || `<p>${escHtml(transcript)}</p>`,
+      attendees: attendees,
+      aiData: aiResult  // store full AI analysis for reader
+    });
+
+    parsedData.subNodes.forEach(sub => {
+      const subTag  = sub.nodeType || (sub.isAction ? "Action Item" : "Topic");
+      const subAttendees = sub.mentionedAttendees.length ? sub.mentionedAttendees : attendees;
+
+      const childNode = placeNode({
+        title: sub.title,
+        date: date,
+        tags: [subTag],
+        body: sub.summary,
+        summary: sub.summary,
+        connections: [parentTitle, sub.title],
+        fullRestructuredBodyHtml: `<div class="transcript-section-heading">${escHtml(sub.title)}</div><p>${escHtml(sub.summary)}</p>`,
+        attendees: subAttendees,
+        aiData: null
+      });
+
+      edges.push({ from: parentNode.id, to: childNode.id });
+    });
+
+    scanTextForDatesAndSchedule(transcript, parentTitle, parentNode.id, date, attendees);
+
+    renderGraph();
+    clearListen();
+    const method = usedClaude ? '🤖 Claude' : '📝 Local parser';
+    showToast(`✓ ${method}: "${parentTitle}" — ${parsedData.subNodes.length + 1} nodes created`);
+
+  } catch(error) {
+    console.error("Mapping failure:", error);
+    let generatedTags = ["Audio", "Live"];
+    if (attendees.length) generatedTags.push("Meeting");
+    const fallbackNode = placeNode({
+      title: userTitle || 'Meeting Note',
+      date, tags: generatedTags, body: transcript,
+      summary: transcript.substring(0, 120) + '...',
+      connections: ["Transcripts"], attendees, aiData: null,
+      fullRestructuredBodyHtml: `<p>${escHtml(transcript)}</p>`
+    });
+    scanTextForDatesAndSchedule(transcript, fallbackNode.title, fallbackNode.id, date, attendees);
+    clearListen();
+    showToast(`✓ Added transcript (Fallback Mode)`);
+  }
+
+  btn.innerHTML = '✦ Process & Add to Map';
+  btn.disabled = true;
+}
+
+// ═══════════════════════════════════════════════
+// PLACE NODE IN 2D WORKSPACE
+// ═══════════════════════════════════════════════
+function placeNode({ title, date, tags, body, summary, connections, fullRestructuredBodyHtml, attendees, aiData }) {
+  const canvas = document.getElementById('graph-canvas');
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+
+  const angle = (nodes.length * 137.5) * Math.PI / 180; 
+  const radius = 140 + nodes.length * 28;
+  const cx = cw / 2, cy = ch / 2;
+  const x = cx + Math.cos(angle) * radius;
+  const y = cy + Math.sin(angle) * radius;
+
+  const node = {
+    id: nextId++,
+    title,
+    date: date || '',
+    tags: tags || [],
+    body,
+    summary,
+    connections,
+    fullRestructuredBodyHtml: fullRestructuredBodyHtml || `<p>${escHtml(body)}</p>`,
+    attendees: attendees || [],
+    aiData: aiData || null,
+    x, y,
+    vx: 0, vy: 0,
+    colorIdx: colorCursor % NODE_COLORS.length,
+    radius: 36 + Math.min(title.length * 1.2, 30)
+  };
+  colorCursor++;
+  nodes.push(node);
+
+  // Automatic layout association matches fallback
+  nodes.forEach(other => {
+    if (other.id === node.id) return;
+    
+    const themeOverlap = node.connections.some(c =>
+      other.connections.some(oc => oc.toLowerCase().includes(c.toLowerCase().substring(0,4))) ||
+      other.title.toLowerCase().includes(c.toLowerCase().substring(0,4))
+    );
+
+    const tagOverlap = node.tags.some(t => other.tags.some(ot => ot.toLowerCase() === t.toLowerCase()));
+
+    if (themeOverlap || tagOverlap) {
+      if (!edges.find(e => (e.from===node.id && e.to===other.id) || (e.from===other.id && e.to===node.id))) {
+        edges.push({ from: node.id, to: other.id });
+      }
+    }
+  });
+
+  hideEmpty();
+  renderGraph();
+  updateBadge();
+  renderAttendeesList();
+
+  setTimeout(() => selectNode(node.id), 200);
+  return node;
+}
+
+// ═══════════════════════════════════════════════
+// POPUP WINDOW / VIEW WORKFLOWS
+// ═══════════════════════════════════════════════
+function selectNode(id) {
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+
+  selectedNode = node;
+  if (attendeeFilter) { attendeeFilter = null; renderAttendeesList(); }
+  renderGraph();
+  
+  if (linkModeActive) {
+    document.getElementById('node-popup').style.display = 'none';
+  } else {
+    showPopup(node);
+  }
+}
+
+function deselectAll() {
+  if (linkModeActive) return; 
+  selectedNode = null;
+  renderGraph();
+  document.getElementById('node-popup').style.display = 'none';
+}
+
+document.getElementById('graph-canvas').addEventListener('click', deselectAll);
+
+function showPopup(node) {
+  const col     = NODE_COLORS[node.colorIdx];
+  const svg     = document.getElementById('graph-canvas');
+  const rect    = svg.getBoundingClientRect();
+  const popup   = document.getElementById('node-popup');
+
+  const sx = node.x * viewScale + viewX + rect.left;
+  const sy = node.y * viewScale + viewY + rect.top;
+
+  const popW = 300, popH = 340;
+  let px = sx + node.radius * viewScale + 12;
+  let py = sy - popH / 2;
+  if (px + popW > window.innerWidth - 20) px = sx - node.radius * viewScale - popW - 12;
+  if (py < 10) py = 10;
+  if (py + popH > window.innerHeight - 10) py = window.innerHeight - popH - 10;
+
+  const connectedIds = edges
+    .filter(e => e.from === node.id || e.to === node.id)
+    .map(e => e.from === node.id ? e.to : e.from);
+  const connectedNodes = nodes.filter(n => connectedIds.includes(n.id));
+
+  popup.style.left = px + 'px';
+  popup.style.top  = py + 'px';
+  popup.style.display = 'block';
+  popup.style.animation = 'none';
+  void popup.offsetHeight;
+  popup.style.animation = 'popup-in .22s cubic-bezier(.34,1.56,.64,1)';
+
+  popup.innerHTML = `
+    <div class="popup-hd">
+      <div class="popup-dot" style="background:${col.fill};box-shadow:0 0 8px ${col.glow}"></div>
+      <div class="popup-title">${escHtml(node.title)}</div>
+      <button class="popup-close" onclick="cancelLinkMode(); deselectAll();">✕</button>
+    </div>
+    <div class="popup-meta">
+      ${node.date ? `<div class="popup-tag" style="color:${col.fill};border-color:${col.fill}40">📅 ${formatDateShort(node.date)}</div>` : ''}
+      ${node.tags.map(t=>`<div class="popup-tag" style="color:var(--muted);border-color:var(--border)">${escHtml(t)}</div>`).join('')}
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto; border-color:var(--border)" onclick="event.stopPropagation(); startManualLink()">
+        🔗 Link
+      </button>
+    </div>
+    <div class="popup-body">
+      ${escHtml(node.summary)}
+    </div>
+    ${node.attendees && node.attendees.length ? `
+    <div style="display:flex; flex-wrap:wrap; gap:6px; padding:0 18px 10px;">
+      ${node.attendees.map(name => `<span class="attendee-chip" style="font-size:10.5px; padding:3px 9px;" onclick="event.stopPropagation(); highlightAttendee('${name.replace(/'/g, "\\'")}')">👤 ${escHtml(name)}</span>`).join('')}
+    </div>` : ''}
+    <a class="popup-readmore-link" onclick="event.stopPropagation(); openFullscreenReader(${node.id})">→ Read Full Restructured Text & Charts</a>
+    
+    ${connectedNodes.length ? `
+    <div class="popup-connections">
+      <div class="popup-conn-label">Connected to</div>
+      <div class="popup-conn-list">
+        ${connectedNodes.map(n=>`
+          <div class="conn-chip" onclick="event.stopPropagation();selectNode(${n.id})">${escHtml(n.title)}</div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// FULLSCREEN READER CONTROLLERS
+// ═══════════════════════════════════════════════
+function openFullscreenReader(nodeId) {
+  const targetNode = nodes.find(n => n.id === nodeId);
+  if (!targetNode) return;
+
+  document.getElementById('reader-heading-node-title').textContent = targetNode.title;
+  document.getElementById('reader-meta-node-details').textContent =
+    `${formatDateShort(targetNode.date) || 'No date'} · ${(targetNode.tags || []).join(', ') || 'General'}`;
+
+  const surface = document.getElementById('reader-payload-html-surface');
+  document.getElementById('fullscreen-reader-page').style.display = 'flex';
+
+  if (targetNode.aiData) {
+    // Build the rich document from stored AI analysis
+    surface.innerHTML = buildReaderDocument(targetNode, targetNode.aiData);
+    setTimeout(animateReaderBars, 80);
+  } else {
+    // Fallback: display the raw restructured HTML
+    surface.innerHTML = `
+      <div class="doc-hero">
+        <div class="doc-hero-inner">
+          <div class="doc-category-badge">📝 Notes</div>
+          <div class="doc-main-title">${escHtml(targetNode.title)}</div>
+          <div class="doc-meta-pills">
+            ${targetNode.date ? `<span class="doc-meta-pill">📅 ${formatDateShort(targetNode.date)}</span>` : ''}
+            ${(targetNode.tags||[]).map(t=>`<span class="doc-meta-pill">🏷 ${escHtml(t)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="doc-body">
+        ${targetNode.fullRestructuredBodyHtml || `<p>${escHtml(targetNode.body || '')}</p>`}
+      </div>`;
+  }
+}
+
+function closeFullscreenReader() {
+  document.getElementById('fullscreen-reader-page').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════
+// GRAPH ENGINE PIPELINES
+// ═══════════════════════════════════════════════
+function renderGraph() {
+  renderEdges();
+  renderNodes();
+  renderPulses();
+  applyTransform();
+}
+
+function applyTransform() {
+  document.getElementById('graph-root').setAttribute('transform',
+    `translate(${viewX},${viewY}) scale(${viewScale})`);
+}
+
+function renderEdges() {
+  const layer = document.getElementById('edges-layer');
+  layer.innerHTML = '';
+
+  edges.forEach((e, i) => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return;
+
+    const isActive = attendeeFilter
+      ? ((a.attendees||[]).includes(attendeeFilter) || (b.attendees||[]).includes(attendeeFilter))
+      : (selectedNode && (selectedNode.id === a.id || selectedNode.id === b.id));
+    const dimmed   = attendeeFilter ? !isActive : (selectedNode && !isActive);
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    const startX = a.x + (dx / dist) * a.radius;
+    const startY = a.y + (dy / dist) * a.radius;
+    const endX   = b.x - (dx / dist) * b.radius;
+    const endY   = b.y - (dy / dist) * b.radius;
+
+    const mx = (startX + endX) / 2 + (endY - startY) * 0.2;
+    const my = (startY + endY) / 2 - (endX - startX) * 0.2;
+    const d  = `M ${startX} ${startY} Q ${mx} ${my} ${endX} ${endY}`;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', isActive ? 'url(#edgeGrad)' : 'rgba(255,255,255,0.1)');
+    path.setAttribute('stroke-width', isActive ? '2' : '1');
+    path.setAttribute('opacity', dimmed ? '0.15' : '1');
+    path.setAttribute('marker-end', 'url(#arrowhead)');
+    path.setAttribute('data-edge', i);
+    path.style.transition = 'stroke .4s ease, stroke-width .4s ease, opacity .4s ease';
+    layer.appendChild(path);
+  });
+}
+
+function renderNodes() {
+  const layer = document.getElementById('nodes-layer');
+  layer.innerHTML = '';
+
+  nodes.forEach(node => {
+    const col  = NODE_COLORS[node.colorIdx];
+    const r    = node.radius;
+    let isSelected, isConnected, isDimmed;
+    if (attendeeFilter) {
+      isSelected  = (node.attendees || []).includes(attendeeFilter);
+      isConnected = false;
+      isDimmed    = !isSelected;
+    } else {
+      isSelected = selectedNode && selectedNode.id === node.id;
+      isConnected = selectedNode && !isSelected && edges.some(e =>
+        (e.from===node.id&&e.to===selectedNode.id)||(e.to===node.id&&e.from===selectedNode.id));
+      isDimmed = selectedNode && !isSelected && !isConnected;
+    }
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${node.x},${node.y})`);
+    g.style.cursor = 'pointer';
+    g.style.opacity = isDimmed ? '0.2' : '1';
+    g.style.transition = 'opacity .4s ease';
+
+    if (isSelected || isConnected) {
+      const glowR = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      glowR.setAttribute('r', r + 12);
+      glowR.setAttribute('fill', 'none');
+      glowR.setAttribute('stroke', col.fill);
+      glowR.setAttribute('stroke-width', '1.5');
+      glowR.setAttribute('opacity', isSelected ? '0.6' : '0.3');
+      glowR.setAttribute('filter', 'url(#glow-blue)');
+      if (isSelected) {
+        glowR.style.animation = 'pulse-ring 2s ease-in-out infinite';
+      }
+      g.appendChild(glowR);
+    }
+
+    const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    halo.setAttribute('r', r + 6);
+    halo.setAttribute('fill', col.fill);
+    halo.setAttribute('opacity', isSelected ? '0.25' : '0.08');
+    halo.style.transition = 'opacity .4s';
+    g.appendChild(halo);
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('r', r);
+    circle.setAttribute('fill', isSelected ? col.fill : `${col.fill}CC`);
+    circle.setAttribute('stroke', col.fill);
+    circle.setAttribute('stroke-width', isSelected ? '2.5' : '1.5');
+    circle.setAttribute('filter', isSelected ? 'url(#glow-strong)' : 'url(#glow-purple)');
+    circle.style.transition = 'all .3s ease';
+    g.appendChild(circle);
+
+    const titleLines = wrapText(node.title, r * 1.6);
+    const lineH = 15;
+    const totalH = titleLines.length * lineH;
+    const startY = -totalH / 2 + (node.date ? -8 : 0);
+
+    titleLines.forEach((line, li) => {
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('dominant-baseline', 'central');
+      txt.setAttribute('y', startY + li * lineH);
+      txt.setAttribute('fill', '#0D1117');
+      txt.setAttribute('font-size', r > 50 ? '12' : '11');
+      txt.setAttribute('font-family', 'Inter, sans-serif');
+      txt.setAttribute('font-weight', '600');
+      txt.textContent = line;
+      g.appendChild(txt);
+    });
+
+    if (node.date) {
+      const dateTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      dateTxt.setAttribute('text-anchor', 'middle');
+      dateTxt.setAttribute('dominant-baseline', 'central');
+      dateTxt.setAttribute('y', startY + titleLines.length * lineH + 4);
+      dateTxt.setAttribute('fill', 'rgba(0,0,0,0.55)');
+      dateTxt.setAttribute('font-size', '9.5');
+      dateTxt.setAttribute('font-family', 'JetBrains Mono, monospace');
+      dateTxt.textContent = formatDateShort(node.date);
+      g.appendChild(dateTxt);
+    }
+
+    g.addEventListener('click', ev => { 
+      ev.stopPropagation(); 
+      if (linkModeActive && selectedNode && selectedNode.id !== node.id) {
+        toggleManualConnection(selectedNode.id, node.id);
+      } else {
+        selectNode(node.id); 
+      }
+    });
+    g.addEventListener('mousedown', ev => startDrag(ev, node));
+
+    if (!isSelected) {
+      const animCircle = document.createElementNS('http://www.w3.org/2000/svg', 'animateTransform');
+      animCircle.setAttribute('attributeName', 'transform');
+      animCircle.setAttribute('type', 'scale');
+      animCircle.setAttribute('values', '1;1.03;1');
+      animCircle.setAttribute('dur', `${2.5 + node.id * 0.3}s`);
+      animCircle.setAttribute('repeatCount', 'indefinite');
+      circle.appendChild(animCircle);
+    }
+
+    layer.appendChild(g);
+  });
+}
+
+function renderPulses() {
+  const layer = document.getElementById('pulses-layer');
+  layer.innerHTML = '';
+  if (!selectedNode) return;
+
+  edges.forEach((e, i) => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return;
+    if (a.id !== selectedNode.id && b.id !== selectedNode.id) return;
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    const startX = a.x + (dx / dist) * a.radius;
+    const startY = a.y + (dy / dist) * a.radius;
+    const endX   = b.x - (dx / dist) * b.radius;
+    const endY   = b.y - (dy / dist) * b.radius;
+
+    const mx = (startX + endX) / 2 + (endY - startY) * 0.2;
+    const my = (startY + endY) / 2 - (endX - startX) * 0.2;
+    const d  = `M ${startX} ${startY} Q ${mx} ${my} ${endX} ${endY}`;
+
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('d', d);
+    pathEl.setAttribute('fill', 'none');
+    pathEl.setAttribute('stroke', 'none');
+    pathEl.setAttribute('id', `pulse-path-${i}`);
+    layer.appendChild(pathEl);
+
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('r', '4');
+    dot.setAttribute('fill', NODE_COLORS[selectedNode.colorIdx].fill);
+    dot.setAttribute('filter', 'url(#glow-blue)');
+    dot.setAttribute('opacity', '0.9');
+
+    const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+    anim.setAttribute('dur', `${1.8 + i * 0.4}s`);
+    anim.setAttribute('repeatCount', 'indefinite');
+    anim.setAttribute('keyTimes', '0;1');
+    anim.setAttribute('calcMode', 'spline');
+    anim.setAttribute('keySplines', '0.4 0 0.6 1');
+
+    const mpath = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
+    mpath.setAttribute('href', `#pulse-path-${i}`);
+    anim.appendChild(mpath);
+    dot.appendChild(anim);
+    layer.appendChild(dot);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// MANUAL CONNECTION ENGINE INTERFACES
+// ═══════════════════════════════════════════════
+function startManualLink() {
+  linkModeActive = true;
+  document.getElementById('node-popup').style.display = 'none';
+  document.getElementById('link-helper-hud').style.display = 'flex';
+  showToast("Link Mode Active: Click target node directly to tie connection.");
+}
+
+function cancelLinkMode() {
+  linkModeActive = false;
+  document.getElementById('link-helper-hud').style.display = 'none';
+  if (selectedNode) showPopup(selectedNode);
+}
+
+function toggleManualConnection(idA, idB) {
+  const existingIndex = edges.findIndex(e => (e.from === idA && e.to === idB) || (e.from === idB && e.to === idA));
+  
+  if (existingIndex > -1) {
+    edges.splice(existingIndex, 1);
+    showToast("Link severed.");
+  } else {
+    edges.push({ from: idA, to: idB });
+    showToast("Link successfully connected.");
+  }
+  
+  linkModeActive = false;
+  document.getElementById('link-helper-hud').style.display = 'none';
+  
+  renderGraph();
+  updateBadge();
+  selectNode(idB);
+}
+
+// ═══════════════════════════════════════════════
+// WORKSPACE ACTIONS (DRAG, PAN, ZOOM, LAUNCH SIM)
+// ═══════════════════════════════════════════════
+function startDrag(ev, node) {
+  ev.stopPropagation();
+  ev.preventDefault();
+  draggingNode = node;
+  const svgRect = document.getElementById('graph-canvas').getBoundingClientRect();
+  
+  dragOffX = (ev.clientX - svgRect.left - viewX) / viewScale - node.x;
+  dragOffY = (ev.clientY - svgRect.top  - viewY) / viewScale - node.y;
+
+  function onMove(e) {
+    if (!draggingNode) return;
+    const svgR = document.getElementById('graph-canvas').getBoundingClientRect();
+    draggingNode.x = (e.clientX - svgR.left - viewX) / viewScale - dragOffX;
+    draggingNode.y = (e.clientY - svgR.top  - viewY) / viewScale - dragOffY;
+    renderGraph();
+    if (selectedNode && selectedNode.id === draggingNode.id && !linkModeActive) showPopup(draggingNode);
+  }
+
+  function onUp() {
+    draggingNode = null;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+const svg = document.getElementById('graph-canvas');
+svg.addEventListener('mousedown', e => {
+  if (e.target === svg || e.target.id === 'graph-root') {
+    isPanning = true;
+    panStartX = e.clientX; panStartY = e.clientY;
+    panStartViewX = viewX; panStartViewY = viewY;
+  }
+});
+
+document.addEventListener('mousemove', e => {
+  if (!isPanning) return;
+  viewX = panStartViewX + (e.clientX - panStartX);
+  viewY = panStartViewY + (e.clientY - panStartY);
+  applyTransform();
+  if (selectedNode && !linkModeActive) showPopup(selectedNode);
+});
+
+document.addEventListener('mouseup', () => { isPanning = false; });
+
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  const rect   = svg.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  viewX = mx - (mx - viewX) * factor;
+  viewY = my - (my - viewY) * factor;
+  viewScale = Math.max(0.2, Math.min(4, viewScale * factor));
+  applyTransform();
+  if (selectedNode && !linkModeActive) showPopup(selectedNode);
+}, { passive: false });
+
+function zoomIn()   { viewScale = Math.min(4, viewScale * 1.2); applyTransform(); if (selectedNode && !linkModeActive) showPopup(selectedNode); }
+function zoomOut()  { viewScale = Math.max(.2, viewScale / 1.2); applyTransform(); if (selectedNode && !linkModeActive) showPopup(selectedNode); }
+function resetView(){ viewX = 0; viewY = 0; viewScale = 1; applyTransform(); if (selectedNode && !linkModeActive) showPopup(selectedNode); }
+
+function autoLayout() {
+  if (nodes.length === 0) return;
+  const svg   = document.getElementById('graph-canvas');
+  const cw    = svg.clientWidth,  ch = svg.clientHeight;
+  const angle = (2 * Math.PI) / nodes.length;
+
+  nodes.forEach((n, i) => {
+    const r = Math.max(160, nodes.length * 45);
+    n.x = cw / 2 + Math.cos(i * angle - Math.PI / 2) * r;
+    n.y = ch / 2 + Math.sin(i * angle - Math.PI / 2) * r;
+    n.vx = 0; n.vy = 0;
+  });
+
+  renderGraph();
+  if (selectedNode && !linkModeActive) showPopup(selectedNode);
+  showToast('Layout reset');
+}
+
+function toggleForce() {
+  forceActive = !forceActive;
+  if (forceActive) runForce();
+  else clearInterval(forceTimer);
+  showToast(forceActive ? '⚡ Simulation running' : '⚡ Simulation paused');
+}
+
+function runForce() {
+  clearInterval(forceTimer);
+  forceTimer = setInterval(() => {
+    if (!forceActive || nodes.length < 2) return;
+    const K  = 8000, D = 0.85, LINK = 200;
+
+    nodes.forEach(a => {
+      nodes.forEach(b => {
+        if (a.id === b.id) return;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
+        const f = K / (dist * dist);
+        a.vx -= (dx / dist) * f;
+        a.vy -= (dy / dist) * f;
+      });
+    });
+
+    edges.forEach(e => {
+      const a = nodes.find(n => n.id === e.from);
+      const b = nodes.find(n => n.id === e.to);
+      if (!a || !b) return;
+      const dx   = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
+      const f    = (dist - LINK) * 0.04;
+      a.vx += (dx / dist) * f; a.vy += (dy / dist) * f;
+      b.vx -= (dx / dist) * f; b.vy -= (dy / dist) * f;
+    });
+
+    nodes.forEach(n => {
+      n.vx *= D; n.vy *= D;
+      n.x  += n.vx; n.y += n.vy;
+    });
+
+    renderGraph();
+    if (selectedNode && !linkModeActive) showPopup(selectedNode);
+  }, 40);
+}
+
+// ═══════════════════════════════════════════════
+// SYSTEM INITS & SEED MOCK BUILDERS
+// ═══════════════════════════════════════════════
+function wrapText(text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [], charLimit = Math.floor(maxWidth / 7.5);
+  let cur = '';
+  words.forEach(w => {
+    if ((cur + ' ' + w).trim().length > charLimit) { lines.push(cur.trim()); cur = w; }
+    else cur += ' ' + w;
+  });
+  if (cur.trim()) lines.push(cur.trim());
+  return lines.slice(0, 3);
+}
+
+function formatDateShort(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function hideEmpty() {
+  document.getElementById('graph-empty').style.display = nodes.length ? 'none' : 'flex';
+}
+
+function seedMockHistoricalData() {
+  const pastDate = new Date();
+  pastDate.setDate(pastDate.getDate() - 4); 
+  const pastDateString = pastDate.toISOString().split('T')[0];
+  
+  const seedNode = placeNode({
+    title: "Project Alpha Core Sync",
+    date: pastDateString,
+    tags: ["Operations", "Sync"],
+    body: "We reviewed sprint deliverables. Alpha phase deployment is set for 85% completion rate.",
+    summary: "Seeded sync layout checking calendar and full metrics parsing views.",
+    connections: ["Milestones"],
+    fullRestructuredBodyHtml: `
+      <div class="transcript-section-heading">Operational Metrics Overview</div>
+      <p>The team finalized core components for Alpha. We successfully hit an overall engineering benchmark across production assets.</p>
+      <div class="ai-chart-container">
+        <div class="ai-chart-title">Sprint 4 Deliverables Completion Status</div>
+        <div class="ai-chart-row">
+          <div class="ai-chart-label"><span>Backend Pipelines Deployment</span><span>85%</span></div>
+          <div class="ai-chart-bar-bg"><div class="ai-chart-bar-fill" style="width: 85%"></div></div>
+        </div>
+      </div>
+      <div class="transcript-section-heading">Immediate Timeline Obligations</div>
+      <p>Ensure that all client components are locked down securely before <mark>tomorrow morning review sessions</mark> kick-off.</p>
+    `,
+    attendees: ["Edward Tan", "Priya Nair"]
+  });
+
+  const todayISO = new Date().toISOString().split('T')[0];
+  scheduleRegistry.push({
+    id: "mock-seed-1",
+    scheduledDate: todayISO,
+    taskString: "Review client components launch event.",
+    originTitle: seedNode.title,
+    originNodeId: seedNode.id,
+    attendees: ["Edward Tan", "Priya Nair"]
+  });
+}
+
+function updateBadge() {
+  document.getElementById('badge-nodes').textContent = nodes.length;
+  document.getElementById('badge-edges').textContent = edges.length;
+}
+
+function clearAll() {
+  if (!confirm('Clear all nodes and edges?')) return;
+  nodes = []; edges = []; selectedNode = null; nextId = 1; colorCursor = 0; linkModeActive = false;
+  scheduleRegistry = []; localTodos = []; attendeeFilter = null;
+  document.getElementById('edges-layer').innerHTML  = '';
+  document.getElementById('nodes-layer').innerHTML  = '';
+  document.getElementById('pulses-layer').innerHTML = '';
+  document.getElementById('node-popup').style.display = 'none';
+  document.getElementById('link-helper-hud').style.display = 'none';
+  hideEmpty(); updateBadge(); renderMorningBrief(); renderTodos();
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+const resizeHandle = document.getElementById('resize-handle');
+const leftPanel    = document.getElementById('left-panel');
+let resizing = false, resizeStartX = 0, resizeStartW = 0;
+
+resizeHandle.addEventListener('mousedown', e => {
+  resizing = true;
+  resizeStartX = e.clientX;
+  resizeStartW = leftPanel.offsetWidth;
+  document.body.style.userSelect = 'none';
+});
+
+document.addEventListener('mousemove', e => {
+  if (!resizing) return;
+  const w = Math.max(300, Math.min(window.innerWidth * .6, resizeStartW + e.clientX - resizeStartX));
+  leftPanel.style.width = w + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+  resizing = false;
+  document.body.style.userSelect = '';
+});
+
+// ── INIT RUNWAY ──
+document.getElementById('ai-date').value   = new Date().toISOString().split('T')[0];
+document.getElementById('note-date').value = new Date().toISOString().split('T')[0];
+
+const styleTag = document.createElement('style');
+styleTag.textContent = `
+@keyframes pulse-ring {
+  0%   { r: 48; opacity: .6; }
+  50%  { r: 56; opacity: .2; }
+  100% { r: 48; opacity: .6; }
+}`;
+document.head.appendChild(styleTag);
+
+seedMockHistoricalData();
+renderMorningBrief();
+renderTodos();
+processMorningBriefAlertNotification();
+
+</script>
+</body>
+</html>
